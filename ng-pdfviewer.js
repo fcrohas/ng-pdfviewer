@@ -17,7 +17,7 @@ directive('pdfviewer', [ function() {
 		scope: {
 			onPageLoad: '&',
 			loadProgress: '&',
-			src: '@',
+			src: '=',
 			stream: '=',
 			id: '=',
 			scale: '@'
@@ -182,10 +182,10 @@ directive('pdfviewer', [ function() {
 			}
 			scope.instance_id = iAttr.id;
 			PDFJS.disableWorker = true;
-			iAttr.$observe('src', function(v) {
+			scope.$watch('src', function(v) {
 				if (v !== undefined && v !== null && v !== '') {
 					scope.pageNum = 1;
-					scope.loadPDF(scope.src);
+					scope.loadPDF(v);
 				}
 			});
 			scope.$watch('stream', function(v) {
@@ -222,7 +222,6 @@ service("PDFViewerService", [ '$rootScope', function($rootScope) {
 
 	svc.Instance = function(id) {
 		var instance_id = id;
-
 		return {
 			prevPage: function() {
 				$rootScope.$broadcast('pdfviewer.prevPage', instance_id);
