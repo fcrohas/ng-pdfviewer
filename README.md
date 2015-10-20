@@ -72,4 +72,7 @@ MIT. See LICENSE.md for further details.
 
 ## Author
 
-Andreas Krennmair <ak@synflood.at>
+Rework by me Fabrice Crohas <fcrohas@gmail.com>
+
+Original author Andreas Krennmair <ak@synflood.at>
+
