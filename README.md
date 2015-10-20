@@ -1,6 +1,8 @@
 # ng-pdfviewer
 
-AngularJS PDF viewer directive using pdf.js .
+AngularJS PDF viewer directive for pdfjs using stream or url.
+
+An online demonstration is available here http://fcrohas.github.io/ng-pdfviewer/
 
 Sample html using url :
 ``` html
@@ -31,10 +33,10 @@ var app = angular.module('testApp', [ 'ngPDFViewer' ]);
 app.controller('TestCtrl', [ '$scope', 'PDFViewerService', function($scope, pdf) {
 	$scope.viewer = pdf.Instance("viewer");
 	$scope.pdfStream = new Uint8Array();
-	$http.get("http://github.io/document/1/PDF",
+	$http.get("test.pdf",
 	 				{params : {}, responseType: "arraybuffer"}).then(function(response) {
 						$scope.pdfStream = new Uint8Array(response.data);
-	 })
+	 });
 
 	$scope.nextPage = function() {
 		$scope.viewer.nextPage();
