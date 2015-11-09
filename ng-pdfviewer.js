@@ -22,11 +22,22 @@ directive('pdfviewer', [ function() {
 			id: '=',
 			scale: '@'
 		},
-		controller: [ '$scope', function($scope) {
+		controller: [ '$scope', '$window', function($scope,$window) {
 			$scope.pageNum = 1;
 			$scope.pdfDoc = null;
+			$scope.rotate = 0;
+			$scope.isPrint = false;
 			var zoomChanged = false;
+			var rotateChanged = false;
 			var mousePos = {x:-1, y:-1, deltaX :0, deltaY:0};
+
+			function rotatePage() {
+				if (($scope.rotate >= 360) || ($scope.rotate <= -360)){
+					$scope.rotate = 0;
+				}
+				rotateChanged = true; 
+				$scope.renderPage($scope.pageNum, true);					
+			}
 
 			$scope.mouseDrag = function(event, canMove) {
 				if (canMove) {
@@ -91,12 +102,12 @@ directive('pdfviewer', [ function() {
 				$scope.pdfDoc.getPage(num).then(function(page) {
 					if (!isZoom)
 						$scope.scale = $scope.viewSize().width / page.pageInfo.view[2];
-					var viewport = page.getViewport($scope.scale);
+					var viewport = page.getViewport($scope.scale, $scope.rotate);
 					var ctx = $scope.canvas.getContext('2d');
 					$scope.canvas.height = viewport.height;
 					$scope.canvas.width = viewport.width;
 
-					page.render({ canvasContext: ctx, viewport: viewport }).promise.then(
+					page.render({ canvasContext: ctx, viewport: viewport, intent : ($scope.isPrint==true) ? 'print' : 'display' }).promise.then(
 						function() { 
 							if (callback) {
 								callback(true);
@@ -104,12 +115,20 @@ directive('pdfviewer', [ function() {
 							$scope.$apply(function() {
 								$scope.onPageLoad({ page: $scope.pageNum, total: $scope.pdfDoc.numPages });
 							});
+							if ($scope.isPrint) {
+								var win = $window.open();
+	    						win.document.write("<img src='"+$scope.canvas.toDataURL()+"'/>");
+	    						win.print();
+	    						win.close();
+    						}
+							$scope.isPrint = false;
 						}, 
 						function() {
 							if (callback) {
 								callback(false);
 							}
 							console.log('page.render failed');
+							$scope.isPrint = false;
 						}
 					);
 				});
@@ -167,10 +186,31 @@ directive('pdfviewer', [ function() {
 					$scope.renderPage($scope.pageNum, true);					
 				}
 			});
+			$scope.$on('pdfviewer.rotateCW', function(evt, id, page) {
+				if (id !== $scope.instance_id) {
+					return;
+				}
+				$scope.rotate += 90;
+				rotatePage();
+			});
+			$scope.$on('pdfviewer.rotateCCW', function(evt, id, page) {
+				if (id !== $scope.instance_id) {
+					return;
+				}
+				$scope.rotate -= 90;
+				rotatePage();
+			});
 			$scope.$on('pdfviewer.refresh', function(evt, id, page) {
 				if (id !== $scope.instance_id) {
 					return;
 				}
+				$scope.renderPage($scope.pageNum, zoomChanged);					
+			});
+			$scope.$on('pdfviewer.printPage', function(evt, id, page) {
+				if (id !== $scope.instance_id) {
+					return;
+				}
+				$scope.isPrint = true;
 				$scope.renderPage($scope.pageNum, zoomChanged);					
 			});
 		} ],
@@ -216,12 +256,21 @@ service("PDFViewerService", [ '$rootScope', function($rootScope) {
 		$rootScope.$broadcast('pdfviewer.zoomOut');
 	};
 
+	svc.rotateCW = function() {
+		$rootScope.$broadcast('pdfviewer.rotateCW');
+	};
+
+	svc.rotateCCW = function() {
+		$rootScope.$broadcast('pdfviewer.rotateCCW');
+	};
+
 	svc.refresh = function() {
 		$rootScope.$broadcast('pdfviewer.refresh');
 	};
 
 	svc.Instance = function(id) {
 		var instance_id = id;
+
 		return {
 			prevPage: function() {
 				$rootScope.$broadcast('pdfviewer.prevPage', instance_id);
@@ -234,6 +283,15 @@ service("PDFViewerService", [ '$rootScope', function($rootScope) {
 			},
 			zoomOut: function() {
 				$rootScope.$broadcast('pdfviewer.zoomOut', instance_id);
+			},
+			rotateCW: function() {
+				$rootScope.$broadcast('pdfviewer.rotateCW', instance_id);
+			},
+			rotateCCW: function() {
+				$rootScope.$broadcast('pdfviewer.rotateCCW', instance_id);
+			},
+			printPage: function(page) {
+				$rootScope.$broadcast('pdfviewer.printPage', instance_id, page);
 			},
 			gotoPage: function(page) {
 				$rootScope.$broadcast('pdfviewer.gotoPage', instance_id, page);
