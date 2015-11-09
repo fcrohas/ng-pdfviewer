@@ -102,7 +102,7 @@ directive('pdfviewer', [ function() {
 				$scope.pdfDoc.getPage(num).then(function(page) {
 					if (!isZoom)
 						$scope.scale = $scope.viewSize().width / page.pageInfo.view[2];
-					var viewport = page.getViewport($scope.scale, $scope.rotate);
+					var viewport = page.getViewport(($scope.isPrint==true) ? 1.0 : $scope.scale, $scope.rotate);
 					var ctx = $scope.canvas.getContext('2d');
 					$scope.canvas.height = viewport.height;
 					$scope.canvas.width = viewport.width;
